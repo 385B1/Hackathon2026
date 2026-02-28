@@ -14,7 +14,8 @@ joystick_packet_t joystick = {0};
 
 TaskHandle_t melodija_handler = nullptr;
 int note = 0, note_duration;
-unsigned long pause_note = 0, start_time;
+unsigned long pause_note = 0, start_time, vibration_last_time = 0;
+
 /*
 void melodija(void *param){
   (void)param;
@@ -67,6 +68,7 @@ void setup() {
   pinMode(PUCANJE, INPUT_PULLUP);
   pinMode(SKOK, INPUT_PULLUP);
   pinMode(BUZZER,OUTPUT);
+  pinMode(VIBRATOR,OUTPUT);
 
     for (int note = 0; note < 9; note++){
       note_duration = 1000/durations[note];
@@ -85,7 +87,6 @@ void setup() {
 
 void loop() {
 
-  Serial.println("Main loop");
   int16_t buttons = 0;
   // buttons bit shifting
   buttons |= (!digitalRead(CUCANJ_SAG) ? 1 : 0) << 0;
@@ -98,28 +99,41 @@ void loop() {
   joystick.joy_x = x;
   joystick.joy_y = y;
   joystick.buttons = buttons;
-  Serial.println(buttons);
   Serial.write((uint8_t*)&joystick, sizeof(joystick));
   
+  if (millis() - vibration_last_time >= 100){
+    digitalWrite(VIBRATOR,LOW);
+  }
+
   if (digitalRead(CUCANJ_SAG) == LOW){
     tone(BUZZER,NOTE_G4,1000/button_note_duration);
     noTone(BUZZER);
+    digitalWrite(VIBRATOR,HIGH);
+    vibration_last_time = millis();
   }
     if (digitalRead(SHIELD) == LOW){
     tone(BUZZER,NOTE_F4,1000/button_note_duration);
     noTone(BUZZER);
+    digitalWrite(VIBRATOR,HIGH);
+    vibration_last_time = millis();
   }
     if (digitalRead(PUCANJE) == LOW){
     tone(BUZZER,NOTE_A4,1000/button_note_duration);
     noTone(BUZZER);
+    digitalWrite(VIBRATOR,HIGH);
+    vibration_last_time = millis();
   }
     if (digitalRead(SKOK) == LOW){
     tone(BUZZER,NOTE_B4,1000/button_note_duration);
     noTone(BUZZER);
+    digitalWrite(VIBRATOR,HIGH);
+    vibration_last_time = millis();
   }
     if (digitalRead(JOYBTN) == LOW){
     tone(BUZZER,NOTE_D4,1000/button_note_duration);
     noTone(BUZZER);
+    digitalWrite(VIBRATOR,HIGH);
+    vibration_last_time = millis();
   }
 
   //Serial.println(buttons);
