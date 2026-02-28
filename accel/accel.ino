@@ -15,6 +15,9 @@ int16_t tilt_z;
 
 Adafruit_LSM6DSOX sox;
 
+int32_t millis;
+bool sleep = false;
+
 void setup() {
   Serial.begin(115200);
 
@@ -55,6 +58,26 @@ void loop() {
   sensors_event_t gyro;
   sensors_event_t temp;
   sox.getEvent(&accel, &gyro, &temp);
+
+
+  struct joystick_packet_t previous = memcpy(&previous, &current, sizeof(struct joystick_packet_t));
+
+  if (!sleep) {
+
+  }
+
+
+  if(memcmp(&current, &previous, sizeof(struct joystick_packet_t)) != 0) {
+      int32_t millis = millis();
+      sleep = false;
+      // current = memcpy(&current, &previous, sizeof(struct joystick_packet_t));
+  }
+
+  if (millis() - millis > 2930) {
+    sleep = true;
+  }
+
+  
 
     Serial.print("\t\tAccel X: ");
   //Serial.print(accel.acceleration.x);
