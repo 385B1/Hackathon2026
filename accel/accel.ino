@@ -1,8 +1,55 @@
 #include "const.h"
-#include <Wire.h>
-#include <Adafruit_LSM6DSOX.h>
-#include <FastLED.h>
-#include "ColorConverterLib.h"
+// #include "chars.cpp"
+//#include <Wire.h>
+//#include <Adafruit_LSM6DSOX.h>
+//#include <FastLED.h>
+//#include "ColorConverterLib.h"
+
+int x_precise;
+int y_precise;
+
+bool letters[3][7][7] = 
+{
+/* A */
+{
+{0,0,1,1,1,0,0},
+{0,1,0,0,0,1,0},
+{1,0,0,0,0,0,1},
+{1,1,1,1,1,1,1},
+{1,0,0,0,0,0,1},
+{1,0,0,0,0,0,1},
+{1,0,0,0,0,0,1}
+},
+
+/* B */
+{
+{1,1,1,1,1,0,0},
+{1,0,0,0,0,1,0},
+{1,0,0,0,0,1,0},
+{1,1,1,1,1,0,0},
+{1,0,0,0,0,1,0},
+{1,0,0,0,0,1,0},
+{1,1,1,1,1,0,0}
+},
+
+/* C */
+{
+{0,1,1,1,1,1,0},
+{1,0,0,0,0,0,1},
+{1,0,0,0,0,0,0},
+{1,0,0,0,0,0,0},
+{1,0,0,0,0,0,0},
+{1,0,0,0,0,0,1},
+{0,1,1,1,1,1,0}
+}
+};
+
+char real_chars[36] = {
+'A','B','C','D','E','F','G','H','I','J',
+'K','L','M','N','O','P','Q','R','S','T',
+'U','V','W','X','Y','Z',
+'0','1','2','3','4','5','6','7','8','9'
+};
 
 typedef struct {
   int16_t buttons;
@@ -13,85 +60,24 @@ typedef struct {
   int16_t tilt_z;
 } joystick_packet_t;
 
-int32_t millis_var;
-bool sleep_ = false;
+bool pixels[7][7] = { false };
+
+
+int x_map;
+int y_map;
+int millis_xy;
 
 joystick_packet_t current = { 0 };
-
-Adafruit_LSM6DSOX sox;
-
-CRGB leds[NUM_LEDS];
-
-TaskHandle_t melodija_handler = nullptr;
-int note = 0, note_duration;
-unsigned long pause_note = 0, start_time;
-unsigned long vibration_last_time = 0;
-
-int notes[] = {
-  NOTE_G4, NOTE_G4, NOTE_G4,
-  NOTE_DS5, NOTE_AS4, NOTE_G4,
-  NOTE_DS5, NOTE_AS4, NOTE_G4
-};
-int notes1[] = {
-  NOTE_G4, NOTE_G4
-};
-int notes2[] = {
-  NOTE_DS5, NOTE_AS4
-};
-int notes3[] = {
-  NOTE_DS5, NOTE_AS4
-};
-int notes4[] = {
-  NOTE_G4, NOTE_AS4
-};
-int durations[] = {
-  4, 4, 4,
-  3, 3, 7,
-  3, 3, 9
-};
-
-int durations0[] = {
-  4, 4
-};
-
-int button_note_duration = 10;
 
 void setup() {
   Serial.begin(115200);
 
-  FastLED.addLeds<WS2812, 2>(leds, NUM_LEDS);
-
-  Wire.begin(SDA, SCL);
-
-  if (!sox.begin_I2C(I2CPROTOCOL)) {
-    leds[0] = 0x00FF00;
-    FastLED.show();
-    while (1)
-      ;
-  }
-  leds[0] = 0xFF0000;
-  FastLED.show();
-  delay(2000);
-
   pinMode(JOYX, INPUT);
   pinMode(JOYY, INPUT);
-  pinMode(JOYBTN, INPUT_PULLUP);
 
-  pinMode(CUCANJ_SAG, INPUT_PULLUP);
-  pinMode(SHIELD, INPUT_PULLUP);
-  pinMode(PUCANJE, INPUT_PULLUP);
-  pinMode(SKOK, INPUT_PULLUP);
-  pinMode(VIBRATOR, OUTPUT);
-
-  for (int note = 0; note < 9; note++) {
-    note_duration = 1000 / durations[note];
-    tone(BUZZER, notes[note], note_duration);
-    pause_note = note_duration * 1.2;
-    delay(pause_note);
-
-    noTone(BUZZER);
-  }
+  millis_xy = millis();
 }
+
 
 
 
@@ -100,139 +86,67 @@ void loop() {
 
 
 
-  joystick_packet_t previous;
+  int x_previous = x_precise;
+  int y_previous = y_precise;
 
-  memcpy(&previous, &current, sizeof(current));
-
-  if (!sleep_) {
-    int16_t buttons = 0;
-    buttons |= (!digitalRead(CUCANJ_SAG) ? 1 : 0) << 0;
-    buttons |= (!digitalRead(SHIELD) ? 1 : 0) << 1;
-    buttons |= (!digitalRead(PUCANJE) ? 1 : 0) << 2;
-    buttons |= (!digitalRead(SKOK) ? 1 : 0) << 3;
-    buttons |= (!digitalRead(JOYBTN) ? 1 : 0) << 4;
-    current.buttons = buttons;
-
-    int x = (int)((analogRead(JOYX) - 2048) * 0.0488519785051294577430385930);
-    int y = (int)((analogRead(JOYY) - 2048) * 0.0488519785051294577430385930);
-    current.joy_x = x;
-    current.joy_y = y;
-
-    sensors_event_t accel;
-    sensors_event_t gyro;
-    sensors_event_t temp;
-    sox.getEvent(&accel, &gyro, &temp);
-
-    current.tilt_x = map(accel.acceleration.x, -5, 5, MIN_RANGE, MAX_RANGE);
-    current.tilt_y = map(accel.acceleration.y, -5, 5, MIN_RANGE, MAX_RANGE);
-    current.tilt_z = map(accel.acceleration.z, -5, 5, MIN_RANGE, MAX_RANGE);
-
-    Serial.write((uint8_t*)&current, sizeof(current));
-
-    if (millis() - vibration_last_time >= 100) {
-      digitalWrite(VIBRATOR, LOW);
-    }
+  x_precise = analogRead(JOYX);
+  y_precise = analogRead(JOYY);
 
 
-    if (Serial.available() > 0) {
-      char incomingByte = Serial.read();
-      if (incomingByte & 0x01) {
-        digitalWrite(VIBRATOR, HIGH);
-        vibration_last_time = millis();
+  x_map = map(analogRead(JOYX) + 585, 0, 4095, -3, 3);
+  y_map = map(analogRead(JOYY) + 585, 0, 4095, -3, 3);
 
-        tone(BUZZER, notes1[0], 250);
-        tone(BUZZER, notes1[1], 250);
+  pixels[x_map][y_map] = 1;
 
-        noTone(BUZZER);
+  if (x_previous != x_precise && y_previous != y_precise) {
+    millis_xy = millis();
+    Serial.println("difference");
+  }
+
+  if (millis() - millis_xy > 3000) {
+    Serial.println("record done");
+
+          for (int j = 0; j < 7; j++) {
+        for (int k = 0; k < 7; k++) {
+         
+            Serial.printf("%d ", (int)pixels[j][k]);
+          
+        }
+        Serial.println();
+          }
+
+    int max_counter = 0;
+    int max_index = 0;
+
+    for (int i = 0; i < 35; i++) {
+      int counter = 0;
+      for (int j = 0; j < 7; j++) {
+        for (int k = 0; k < 7; k++) {
+          if (pixels[j][k] == letters[i][j][k]) {
+            counter++;
+          }
+        }
       }
-      if (incomingByte & 0x01) {
-        digitalWrite(VIBRATOR, HIGH);
-        vibration_last_time = millis();
-
-        tone(BUZZER, notes1[0], 250);
-        tone(BUZZER, notes1[1], 250);
-
-        noTone(BUZZER);
-      }
-      if (incomingByte & 0x02) {
-        digitalWrite(VIBRATOR, HIGH);
-        vibration_last_time = millis();
-
-        tone(BUZZER, notes2[0], 250);
-        tone(BUZZER, notes2[1], 250);
-
-        noTone(BUZZER);
-      }
-      if (incomingByte & 0x03) {
-        digitalWrite(VIBRATOR, HIGH);
-        vibration_last_time = millis();
-
-        tone(BUZZER, notes3[0], 250);
-        tone(BUZZER, notes3[1], 250);
-
-        noTone(BUZZER);
-      }
-      if (incomingByte & 0x04) {
-        digitalWrite(VIBRATOR, HIGH);
-        vibration_last_time = millis();
-
-        tone(BUZZER, notes4[0], 250);
-        tone(BUZZER, notes4[1], 250);
-
-        noTone(BUZZER);
+      if (counter > max_counter) {
+        max_counter = counter;
+        max_index = i;
       }
     }
+
+    pixels[x_map][y_map] = { 0 };
+
+    Serial.println("detected: ");
+    Serial.println(real_chars[max_index]);
+
+    millis_xy = millis();
+
+    delay(3000);
+
   }
 
-  if (digitalRead(CUCANJ_SAG) == LOW) {
-    tone(BUZZER, NOTE_G4, 1000 / button_note_duration);
-    noTone(BUZZER);
-    digitalWrite(VIBRATOR, HIGH);
-    vibration_last_time = millis();
-  }
-  if (digitalRead(SHIELD) == LOW) {
-    tone(BUZZER, NOTE_F4, 1000 / button_note_duration);
-    noTone(BUZZER);
-    digitalWrite(VIBRATOR, HIGH);
-    vibration_last_time = millis();
-  }
-  if (digitalRead(PUCANJE) == LOW) {
-    tone(BUZZER, NOTE_A4, 1000 / button_note_duration);
-    noTone(BUZZER);
-    digitalWrite(VIBRATOR, HIGH);
-    vibration_last_time = millis();
-  }
-  if (digitalRead(SKOK) == LOW) {
-    tone(BUZZER, NOTE_B4, 1000 / button_note_duration);
-    noTone(BUZZER);
-    digitalWrite(VIBRATOR, HIGH);
-    vibration_last_time = millis();
-  }
-  if (digitalRead(JOYBTN) == LOW) {
-    tone(BUZZER, NOTE_D4, 1000 / button_note_duration);
-    noTone(BUZZER);
-    digitalWrite(VIBRATOR, HIGH);
-    vibration_last_time = millis();
-  }
+  Serial.println("x");
 
+  Serial.println(x_map);
 
-
-  uint8_t r, g, b;
-  ColorConverter::HsvToRgb(millis() / 3600.0, 1.0, 1.0, r, g, b);
-  leds[0] = (r << 16) | (g << 8) | b;
-  FastLED.show();
-
-  if (memcmp(&current, &previous, sizeof(current)) != 0) {
-    millis_var = millis();
-    sleep_ = false;
-  }
-
-  if (millis() - millis_var > 29297) {
-    sleep_ = true;
-  }
-
-  if (digitalRead(CUCANJ_SAG) == 0) {
-    sleep_ = false;
-    millis_var = millis();
-  }
+  Serial.println(y_map);
 }
