@@ -4,6 +4,9 @@
 //#include <Adafruit_LSM6DSOX.h>
 //#include <FastLED.h>
 //#include "ColorConverterLib.h"
+#include <cstring>
+
+
 
 int x_precise;
 int y_precise;
@@ -82,25 +85,28 @@ void setup() {
 
 
 void loop() {
-  delay(50);
+  // delay(50);
 
 
 
   int x_previous = x_precise;
   int y_previous = y_precise;
 
-  x_precise = analogRead(JOYX);
-  y_precise = analogRead(JOYY);
+  x_precise = map(analogRead(JOYX), 0, 4095, -100, 100);
+  y_precise = map(analogRead(JOYX), 0, 4095, -100, 100);
 
 
-  x_map = map(analogRead(JOYX) + 585, 0, 4095, -3, 3);
-  y_map = map(analogRead(JOYY) + 585, 0, 4095, -3, 3);
+  x_map = map(analogRead(JOYX) + 585, 0, 4095, 0, 6);
+  y_map = map(analogRead(JOYY) + 585, 0, 4095, 6, 0);
 
-  pixels[x_map][y_map] = 1;
+  
 
   if (x_previous != x_precise && y_previous != y_precise) {
     millis_xy = millis();
     Serial.println("difference");
+    pixels[y_map][x_map] = 1;
+  } else {
+     Serial.println("no difference");
   }
 
   if (millis() - millis_xy > 3000) {
@@ -133,14 +139,16 @@ void loop() {
       }
     }
 
-    pixels[x_map][y_map] = { 0 };
+    memset(pixels, 0, sizeof(pixels)); // sets all bytes to 0
 
     Serial.println("detected: ");
     Serial.println(real_chars[max_index]);
 
-    millis_xy = millis();
+    
 
     delay(3000);
+
+    millis_xy = millis();
 
   }
 
