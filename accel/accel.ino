@@ -104,6 +104,11 @@ void loop() {
     sleep = true;
   }
 
+  if(digitalRead(CUCANJ_SAG) == 1) {
+    sleep = false;
+    int32_t millis = millis();
+  }
+
   
 
     Serial.print("\t\tAccel X: ");
