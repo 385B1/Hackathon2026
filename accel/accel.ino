@@ -18,6 +18,8 @@ Adafruit_LSM6DSOX sox;
 int32_t millis;
 bool sleep = false;
 
+joystick_packet_t current = {0};
+
 void setup() {
   Serial.begin(115200);
 
@@ -62,8 +64,33 @@ void loop() {
 
   struct joystick_packet_t previous = memcpy(&previous, &current, sizeof(struct joystick_packet_t));
 
+  delay(50);
+
   if (!sleep) {
 
+  int16_t buttons = 0;
+  buttons |= (!digitalRead(CUCANJ_SAG) ? 1 : 0) << 0;
+  buttons |= (!digitalRead(SHIELD) ? 1 : 0) << 1;
+  buttons |= (!digitalRead(PUCANJE) ? 1 : 0) << 2;
+  buttons |= (!digitalRead(SKOK) ? 1 : 0) << 3;
+  buttons |= (!digitalRead(JOYBTN) ? 1 : 0) << 4;
+  current.buttons = buttons;
+  
+  int x = (int)((analogRead(JOYX)-2048) * 0.0488519785051294577430385930);
+  int y = (int)((analogRead(JOYY)-2048) * 0.0488519785051294577430385930);
+  current.joy_x = x;
+  current.joy_y = y;
+  
+  sensors_event_t accel;
+  sensors_event_t gyro;
+  sensors_event_t temp;
+  sox.getEvent(&accel, &gyro, &temp);
+
+  current.tilt_x = map(accel.acceleration.x, -5, 5, MIN_RANGE, MAX_RANGE);
+  current.tilt_y = map(accel.acceleration.y, -5, 5, MIN_RANGE, MAX_RANGE);
+  current.tilt_z = map(accel.acceleration.z, -5, 5, MIN_RANGE, MAX_RANGE);
+
+  Serial.write((uint8_t*)&current, sizeof(joystick));
   }
 
 
