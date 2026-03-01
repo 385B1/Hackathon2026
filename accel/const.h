@@ -10,8 +10,8 @@
 #define SDA 8
 #define SCL 9
 #define I2CPROTOCOL 0x6B
-#define MIN_RANGE -150
-#define MAX_RANGE 150
+#define MIN_RANGE -100
+#define MAX_RANGE 100
 
 // buttons
 #define CUCANJ_SAG 41 // btn 1
