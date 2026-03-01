@@ -1,37 +1,36 @@
 #pragma once
 
-//led
+// led
 #define NUM_LEDS 1
+#define LED_PIN 2
+
+// drawing
+#define DISPATCH 10
 
 // accelerometer
 #define SDA 8
 #define SCL 9
 #define I2CPROTOCOL 0x6B
-#define MIN_RANGE -150
-#define MAX_RANGE 150
+#define MIN_RANGE -100
+#define MAX_RANGE 100
 
 // buttons
 #define CUCANJ_SAG 41 // btn 1
 #define SHIELD 39 // btn 2
 #define PUCANJE 40 // btn 3
 #define SKOK 14 // btn 4
+#define BUTTON_NOTE_DURATION 10
 
 // joystick
 #define JOYBTN 10
 #define JOYX 11
 #define JOYY 12
 
-#define CUCANJ_SAG 41
-#define SHIELD 39
-#define PUCANJE 40
-#define SKOK 14
 #define VB_MOTOR 21
 #define BUZZER 42
-#define BUZZER_CH 1
 #define VIBRATOR 21
-#define VIBRATOR_CH 0
 
-// note
+// notes
 #define NOTE_B0  31
 #define NOTE_C1  33
 #define NOTE_CS1 35
