@@ -1,7 +1,5 @@
 #pragma once
 
-#define NUM_LEDS 1
-
 
 //led
 #define NUM_LEDS 1
@@ -21,23 +19,22 @@
 
 // joystick
 #define JOYBTN 10
+/*
 #define DISPATCH 10
 #define JOYX 11
-#define JOYY 12
+#define JOYY 12 */
 
-#define CUCANJ_SAG 41
-#define SHIELD 39
-#define PUCANJE 40
-#define SKOK 14
+#define JOYX 26
+#define JOYY 27
+#define DISPATCH 17
+
+
 #define VB_MOTOR 21
 #define BUZZER 42
 #define BUZZER_CH 1
 #define VIBRATOR 21
 #define VIBRATOR_CH 0
 
-#define JOYBTN 10
-#define JOYX 11
-#define JOYY 12
 
 // note
 #define NOTE_B0  31

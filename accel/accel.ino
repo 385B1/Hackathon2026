@@ -22,6 +22,8 @@ joystick_packet_t current = { 0 };
 
 bool pixels[7][7] = { false };
 
+bool movement = false;
+
 int x_map;
 int y_map;
 int millis_xy;
@@ -102,10 +104,11 @@ void range_attune(int* x, int* y) {
 
 void determine_action_end(int x, int y) {
 
-  if (x > 1750 && x < 2350 && y > 1750 && y < 2350) {
+  if (x > 1750 && x < 2350 && y > 1750 && y < 2350 && digitalRead(DISPATCH)) {
     Serial.print("-");
   } else {
     millis_xy = millis();
+    movement = true;
     Serial.print(".");
   }
 }
@@ -150,12 +153,15 @@ void finish_recording() {
 
   memset(pixels, 0, sizeof(pixels));  // sets all bytes to 0
 
+if (movement) {
   Serial.println("detected: ");
   Serial.println(real_chars[max_index]);
+  movement = false;
+}
 
 
 
-  delay(3000);
+  /// delay(3000);
 
   millis_xy = millis();
 }
@@ -163,7 +169,7 @@ void finish_recording() {
 void setup() {
   Serial.begin(115200);
 
-  FastLED.addLeds<WS2812, 2>(leds, NUM_LEDS);
+  /* FastLED.addLeds<WS2812, 2>(leds, NUM_LEDS);
 
   Wire.begin(SDA, SCL);
 
@@ -185,27 +191,27 @@ void setup() {
   pinMode(SHIELD, INPUT_PULLUP);
   pinMode(PUCANJE, INPUT_PULLUP);
   pinMode(SKOK, INPUT_PULLUP);
-  pinMode(VIBRATOR, OUTPUT);
-
+  pinMode(VIBRATOR, OUTPUT); */
+ 
   pinMode(JOYX, INPUT);
   pinMode(JOYY, INPUT);
-  pinMode(DISPATCH, INPUT_PULLUP);
+  pinMode(DISPATCH, INPUT_PULLUP); 
 
   millis_xy = millis();
 
-  for (int note = 0; note < 9; note++) {
+  /* for (int note = 0; note < 9; note++) {
     note_duration = 1000 / durations[note];
     tone(BUZZER, start_notes[note], note_duration);
     pause_note = note_duration * 1.2;
     delay(pause_note);
 
     noTone(BUZZER);
-  }
+  }*/
 }
 
 
 
-void loop() {
+void loop() { /*
   delay(50);
 
   joystick_packet_t previous;
@@ -284,7 +290,8 @@ void loop() {
   if (digitalRead(SKOK) == 0) {
     sleep_ = false;
     millis_var = millis();
-  }
+  } */
+
 
   int x = analogRead(JOYX);
   int y = analogRead(JOYY);
@@ -296,11 +303,13 @@ void loop() {
 
   determine_action_end(x, y);
 
-  if (digitalRead(DISPATCH)) {
+  if (!digitalRead(DISPATCH)) {
     pixels[y_map][x_map] = 1;
   }
 
-  if (millis() - millis_xy > 3000) {
+  // Serial.println(digitalRead(17));
+
+  if (millis() - millis_xy > 1200) {
     finish_recording();
-  }
+  } 
 }
