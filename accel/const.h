@@ -21,6 +21,7 @@
 
 // joystick
 #define JOYBTN 10
+#define DISPATCH 10
 #define JOYX 11
 #define JOYY 12
 

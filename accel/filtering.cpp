@@ -1,6 +1,6 @@
 #include <cstring>
 
-bool hasNearbyPixel(int r, int c, bool* pixels) {
+bool hasNearbyPixel(int r, int c, bool pixels[7][7]) {
   for (int dr = -1; dr <= 1; dr++) {
     for (int dc = -1; dc <= 1; dc++) {
       int nr = r + dr;
@@ -14,7 +14,7 @@ bool hasNearbyPixel(int r, int c, bool* pixels) {
   return false;
 }
 
-void cleanNoise(bool* pixels) {
+void cleanNoise(bool pixels[7][7]) {
   bool temp[7][7] = {0};
 
   for (int r = 0; r < 7; r++) {

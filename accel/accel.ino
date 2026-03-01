@@ -1,4 +1,6 @@
 #include "const.h"
+#include "chars.h"
+#include "filtering.h"
 #include <Wire.h>
 #include <Adafruit_LSM6DSOX.h>
 #include <FastLED.h>
@@ -17,6 +19,12 @@ int32_t millis_var;
 bool sleep_ = false;
 
 joystick_packet_t current = { 0 };
+
+bool pixels[7][7] = { false };
+
+int x_map;
+int y_map;
+int millis_xy;
 
 Adafruit_LSM6DSOX sox;
 
@@ -74,6 +82,84 @@ const int* note_sets[] = {
 
 int button_note_duration = 10;
 
+void range_attune(int* x, int* y) {
+  if (*x <= 3050) {
+    // Map lower half: [0 to 3050] -> [0 to 2048]
+    *x = map(*x, 0, 3050, 0, 2048);
+  } else {
+    // Map upper half: [3050 to 4095] -> [2048 to 4095]
+    *x = map(*x, 3050, 4095, 2048, 4095);
+  }
+
+  if (*y <= 3050) {
+    // Map lower half: [0 to 3050] -> [0 to 2048]
+    *y = map(*y, 0, 3050, 0, 2048);
+  } else {
+    // Map upper half: [3050 to 4095] -> [2048 to 4095]
+    *y = map(*y, 3050, 4095, 2048, 4095);
+  }
+}
+
+void determine_action_end(int x, int y) {
+
+  if (x > 1750 && x < 2350 && y > 1750 && y < 2350) {
+    Serial.print("-");
+  } else {
+    millis_xy = millis();
+    Serial.print(".");
+  }
+}
+
+void finish_recording() {
+  Serial.println("record done");
+  cleanNoise(pixels);
+
+  for (int j = 0; j < 7; j++) {
+    for (int k = 0; k < 7; k++) {
+
+      Serial.printf("%d ", (int)pixels[j][k]);
+    }
+    Serial.println();
+  }
+
+  int max_counter = 0;
+  int max_index = 0;
+
+  for (int i = 0; i < 36; i++) {
+    int counter = 0;
+    for (int j = 0; j < 7; j++) {
+      for (int k = 0; k < 7; k++) {
+        if (letters[i][j][k] == 1) {
+          if (hasNearbyPixel(j, k, pixels)) {
+            counter += 3;
+          } else {
+            counter -= 4;
+          }
+        } else {
+          if (pixels[j][k] == 1) {
+            counter -= 3;
+          }
+        }
+      }
+    }
+    if (counter > max_counter) {
+      max_counter = counter;
+      max_index = i;
+    }
+  }
+
+  memset(pixels, 0, sizeof(pixels));  // sets all bytes to 0
+
+  Serial.println("detected: ");
+  Serial.println(real_chars[max_index]);
+
+
+
+  delay(3000);
+
+  millis_xy = millis();
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -101,6 +187,12 @@ void setup() {
   pinMode(SKOK, INPUT_PULLUP);
   pinMode(VIBRATOR, OUTPUT);
 
+  pinMode(JOYX, INPUT);
+  pinMode(JOYY, INPUT);
+  pinMode(DISPATCH, INPUT_PULLUP);
+
+  millis_xy = millis();
+
   for (int note = 0; note < 9; note++) {
     note_duration = 1000 / durations[note];
     tone(BUZZER, start_notes[note], note_duration);
@@ -115,8 +207,6 @@ void setup() {
 
 void loop() {
   delay(50);
-
-
 
   joystick_packet_t previous;
 
@@ -175,25 +265,42 @@ void loop() {
         vibration_last_time = millis();
       }
     }
-
   }
 
-    uint8_t r, g, b;
-    ColorConverter::HsvToRgb(millis() / 3600.0, 1.0, 1.0, r, g, b);
-    leds[0] = (r << 16) | (g << 8) | b;
-    FastLED.show();
+  uint8_t r, g, b;
+  ColorConverter::HsvToRgb(millis() / 3600.0, 1.0, 1.0, r, g, b);
+  leds[0] = (r << 16) | (g << 8) | b;
+  FastLED.show();
 
-    if (memcmp(&current, &previous, sizeof(current)) != 0) {
-      millis_var = millis();
-      sleep_ = false;
-    }
-
-    if (millis() - millis_var > 29297) {
-      sleep_ = true;
-    }
-
-    if (digitalRead(SKOK) == 0) {
-      sleep_ = false;
-      millis_var = millis();
-    }
+  if (memcmp(&current, &previous, sizeof(current)) != 0) {
+    millis_var = millis();
+    sleep_ = false;
   }
+
+  if (millis() - millis_var > 29297) {
+    sleep_ = true;
+  }
+
+  if (digitalRead(SKOK) == 0) {
+    sleep_ = false;
+    millis_var = millis();
+  }
+
+  int x = analogRead(JOYX);
+  int y = analogRead(JOYY);
+
+  range_attune(&x, &y);
+
+  x_map = map(x, 0, 4095, 0, 6);
+  y_map = map(y, 0, 4095, 0, 6);
+
+  determine_action_end(x, y);
+
+  if (digitalRead(DISPATCH)) {
+    pixels[y_map][x_map] = 1;
+  }
+
+  if (millis() - millis_xy > 3000) {
+    finish_recording();
+  }
+}
