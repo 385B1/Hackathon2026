@@ -86,30 +86,31 @@ int button_note_duration = 10;
 
 void range_attune(int* x, int* y) {
   if (*x <= 3050) {
-    // Map lower half: [0 to 3050] -> [0 to 2048]
+
     *x = map(*x, 0, 3050, 0, 2048);
   } else {
-    // Map upper half: [3050 to 4095] -> [2048 to 4095]
+
     *x = map(*x, 3050, 4095, 2048, 4095);
   }
 
   if (*y <= 3050) {
-    // Map lower half: [0 to 3050] -> [0 to 2048]
+
     *y = map(*y, 0, 3050, 0, 2048);
   } else {
-    // Map upper half: [3050 to 4095] -> [2048 to 4095]
+
     *y = map(*y, 3050, 4095, 2048, 4095);
   }
 }
 
 void determine_action_end(int x, int y) {
 
+
   if (x > 1750 && x < 2350 && y > 1750 && y < 2350 && digitalRead(DISPATCH)) {
     Serial.print("-");
   } else {
     millis_xy = millis();
     movement = true;
-    Serial.print(".");
+    //  Serial.print(".");
   }
 }
 
@@ -136,11 +137,11 @@ void finish_recording() {
           if (hasNearbyPixel(j, k, pixels)) {
             counter += 3;
           } else {
-            counter -= 4;
+            counter -= 2;
           }
         } else {
           if (pixels[j][k] == 1) {
-            counter -= 3;
+            counter -= 1;
           }
         }
       }
@@ -153,11 +154,11 @@ void finish_recording() {
 
   memset(pixels, 0, sizeof(pixels));  // sets all bytes to 0
 
-if (movement) {
-  Serial.println("detected: ");
-  Serial.println(real_chars[max_index]);
-  movement = false;
-}
+  if (movement) {
+    Serial.println("detected: ");
+    Serial.println(real_chars[max_index]);
+    movement = false;
+  }
 
 
 
@@ -169,7 +170,7 @@ if (movement) {
 void setup() {
   Serial.begin(115200);
 
-  /* FastLED.addLeds<WS2812, 2>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2812, 2>(leds, NUM_LEDS);
 
   Wire.begin(SDA, SCL);
 
@@ -191,27 +192,27 @@ void setup() {
   pinMode(SHIELD, INPUT_PULLUP);
   pinMode(PUCANJE, INPUT_PULLUP);
   pinMode(SKOK, INPUT_PULLUP);
-  pinMode(VIBRATOR, OUTPUT); */
- 
+  pinMode(VIBRATOR, OUTPUT);
+
   pinMode(JOYX, INPUT);
   pinMode(JOYY, INPUT);
-  pinMode(DISPATCH, INPUT_PULLUP); 
+  pinMode(DISPATCH, INPUT_PULLUP);
 
   millis_xy = millis();
 
-  /* for (int note = 0; note < 9; note++) {
+  for (int note = 0; note < 9; note++) {
     note_duration = 1000 / durations[note];
     tone(BUZZER, start_notes[note], note_duration);
     pause_note = note_duration * 1.2;
     delay(pause_note);
 
     noTone(BUZZER);
-  }*/
+  }
 }
 
 
 
-void loop() { /*
+void loop() {
   delay(50);
 
   joystick_packet_t previous;
@@ -290,16 +291,16 @@ void loop() { /*
   if (digitalRead(SKOK) == 0) {
     sleep_ = false;
     millis_var = millis();
-  } */
+  }
 
 
   int x = analogRead(JOYX);
   int y = analogRead(JOYY);
 
-  range_attune(&x, &y);
+  // range_attune(&x, &y);
 
   x_map = map(x, 0, 4095, 0, 6);
-  y_map = map(y, 0, 4095, 0, 6);
+  y_map = map(y, 0, 4095, 6, 0);
 
   determine_action_end(x, y);
 
@@ -311,5 +312,5 @@ void loop() { /*
 
   if (millis() - millis_xy > 1200) {
     finish_recording();
-  } 
+  }
 }

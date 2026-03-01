@@ -19,15 +19,10 @@
 
 // joystick
 #define JOYBTN 10
-/*
-#define DISPATCH 10
+
+#define DISPATCH 41
 #define JOYX 11
-#define JOYY 12 */
-
-#define JOYX 26
-#define JOYY 27
-#define DISPATCH 17
-
+#define JOYY 12 
 
 #define VB_MOTOR 21
 #define BUZZER 42
